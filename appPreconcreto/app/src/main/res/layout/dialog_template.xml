@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="300dp"
+    android:layout_height="wrap_content">
+
+    <EditText
+        android:id="@+id/write"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="4dp"
+        android:hint="Escribe un comentario"
+        android:inputType="textLongMessage" />
+
+
+    <ImageView
+        android:id="@+id/TomarFoto"
+        android:layout_width="300dp"
+        android:layout_height="226dp"
+        android:layout_gravity="center"
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
+        android:contentDescription="@string/app_name"
+        android:src="@drawable/imagencamara" />
+
+    <Button
+        android:id="@+id/save"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="5dp"
+        android:gravity="center"
+        android:text="Guardar " />
+
+</LinearLayout>
