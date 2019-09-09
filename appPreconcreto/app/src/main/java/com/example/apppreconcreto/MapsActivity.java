@@ -27,6 +27,7 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -122,7 +123,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     Savemycomment.setEnabled(true);
                     fotoTomada.setEnabled(true);
                     Geocoder geocoder = new Geocoder(MapsActivity.this, Locale.getDefault()); //creamos una varialble geocoder para obtener la direccion, latitud y longitud de cualquier ubicacion
-                    final List<Address> addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1); //creamos una lista de donde obtendremos la latitud y longitud
+                    final List<Address> addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1); //creamos una lista de donde obtendremos la latitud y// longitud
+                    Log.d("Test", Double.toString(latLng.latitude))
+                    ;
 
                     Savemycomment.setOnClickListener(new View.OnClickListener() { //creamos el metodo onClickListener para que guarde la observacion y la foto en la API
                         @Override
@@ -231,8 +234,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 String imageData = imageToString(bitmap); //obtenemos nuestra imagen ya transformada a String
                 params.put("id_usuario", String.valueOf(userid)); //pasamos nuestra variable userID previamente obtenida de la clase anterior
                 params.put("nombre", address.get(0).getThoroughfare() + '#'+ address.get(0).getFeatureName()); //obtenemos y pasamos el nombre de la direccion de la ubicacion marcada
-                params.put("latitud", Double.toString(address.get(0).getLatitude())); //obtenemos y pasamos la latitud de la ubicacion marcada
-                params.put("longitud", Double.toString(address.get(0).getLongitude())); //obtenemos y pasamos la longitud de la ubicacion marcada
+                params.put("latitud",Double.toString(latLng.latitude) ); //obtenemos y pasamos la latitud de la ubicacion marcada
+                Log.d("Test",Double.toString(address.get(0).getLatitude()) );
+                params.put("longitud", Double.toString(latLng.longitude)); //obtenemos y pasamos la longitud de la ubicacion marcada
+                Log.d("Test",Double.toString(address.get(0).getLongitude()));
                 params.put("imagen", imageData); //obtenemos y pasamos nuestra imagen
                 params.put("tipo", Integer.toString(0)); //pasamos una variable entera convertida a string con valor de 0
                 params.put("direccion", address.get(0).getAddressLine(0)); //obtenemos y pasamos la direccion de la ubicacion
@@ -250,6 +255,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 return headers;
             }
         };
+        jsonRequest.setRetryPolicy(new DefaultRetryPolicy(
+                0,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         queue.add(jsonRequest); //a nuestro objeto queue le agregamos nuestro jsonRequest para completar nuestro metodo de registrar una ubicacion en la API REST
     }
    //En nuestro metodo onCreate referenciaremos nuestras variables asi como tambien ciertos metodos
