@@ -10,14 +10,17 @@ import android.graphics.Bitmap;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Build;
 import android.os.CountDownTimer;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.FileProvider;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
@@ -51,7 +54,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -64,10 +70,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     private static final int PERMISSION_CODE = 1000 ;
+    private static final int REQUEST_TAKE_PHOTO = 1 ;
     private GoogleMap mMap;
     Button btn_hibrido, btn_normal, btn_satelital, btn_terreno;
     public int userid;
-
+    private Uri uri= null;
     private boolean seTomofoto = false;
     Bitmap bitmap;
     private ImageView fotoTomada;
@@ -136,6 +143,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 fotoTomada.setImageBitmap(bitmap);
                                 postUbicacion(addresses,latLng1,textoObservacion); // posteamos la ubicacion con los datos requeridos
                                 dialogObs.cancel();
+                                uri=null;
+                                bitmap = null;
+                                fotoTomada = null;
                             }else{
                             }
                         }
@@ -145,8 +155,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         @Override
                         public void onClick(View v) {
                             Log.d("foto","iniciando camara");
-                            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE); //creamos un intent para capturar foto
-                            startActivityForResult(intent,0); // mandamos nuestro intent al metodo startActivityForResult
+                            tomarFoto();
+                            //Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE); //creamos un intent para capturar foto
+                           // startActivityForResult(intent,0); // mandamos nuestro intent al metodo startActivityForResult
 
                         }
                     });
@@ -159,15 +170,79 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+
+    //////////////// Tomar la foto
+
+
+
+    String currentPhotoPath;
+
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpeg",         /* suffix */
+                storageDir      /* directory */
+        );
+
+        // Save a file: path for use with ACTION_VIEW intents
+        currentPhotoPath = image.getAbsolutePath();
+        return image;
+    }
+
+    public void tomarFoto(){
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        // Ensure that there's a camera activity to handle the intent
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            // Create the File where the photo should go
+            File photoFile = null;
+            try {
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+                // Error occurred while creating the File
+            }
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+                Uri photoURI = FileProvider.getUriForFile(this,
+                        "com.example.android.fileprovider2",
+                        photoFile);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                uri = photoURI;
+                startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
+            }
+        }
+    }
+
+
+    /////////////
+
+
     //Metodo que nos verifica si esta vacio o ya hay una foto tomada, se muestra la foto en el imageView
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode == RESULT_OK && data.hasExtra("data") && data.getExtras().get("data") != null) { //verificamos si no viene vacio el dato
-            seTomofoto = true; //se valida que hay foto
+        /*if (resultCode == RESULT_OK && data.hasExtra("data") && data.getExtras().get("data") != null) { //verificamos si no viene vacio el dato
         bitmap = (Bitmap) data.getExtras().get("data");
         fotoTomada.setImageBitmap(bitmap); //se pone nuestra foto
-    }
-        super.onActivityResult(requestCode,resultCode, data);
+    }*/
+
+
+        if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
+            //Bundle extras = data.getExtras();
+            //Uri u =  data.getData();
+            //Bitmap imageBitmap = (Bitmap) extras.get("data");
+            seTomofoto = true; //se valida que hay foto
+            fotoTomada.setImageURI(uri);
+
+            try {
+                bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        //super.onActivityResult(requestCode,resultCode, data);
 
     }
 
@@ -175,7 +250,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //Metodo para pasar la image a formato String
     private String imageToString(Bitmap bitmap){ //creamos nuestro metodo imageToString que recibira un objeto bitmap
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(); // creamos un objeto ByteArrayOutputStream
-        bitmap.compress(Bitmap.CompressFormat.JPEG,100,byteArrayOutputStream); //concatenamos nuestra variable bitmap para convertirla a formato JPEG
+        bitmap.compress(Bitmap.CompressFormat.JPEG,50,byteArrayOutputStream); //concatenamos nuestra variable bitmap para convertirla a formato JPEG
         byte[] imgBytes = byteArrayOutputStream.toByteArray(); //creamos un arreglo de bytes y lo igualamos a nuestra variable byteArray...
         String encodedImage = Base64.encodeToString(imgBytes,Base64.DEFAULT); //creamos una variable String en la cual convertiremos nuestra imagen en bytes a codificarla en formato BASE64
         return encodedImage; //devolvemos nuestra variable String
@@ -256,7 +331,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         };
         jsonRequest.setRetryPolicy(new DefaultRetryPolicy(
-                0,
+                25000,
                 DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
                 DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         queue.add(jsonRequest); //a nuestro objeto queue le agregamos nuestro jsonRequest para completar nuestro metodo de registrar una ubicacion en la API REST
@@ -359,6 +434,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 return headers;
             }
         };
+        request.setRetryPolicy(new DefaultRetryPolicy(
+                25000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         requestQueue.add(request);
     }
     //En este metodo se crearan los marcadores que ya estan almacenados en la API
@@ -384,7 +463,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 //validamos si el mapa viene vacio, si lo esta nos crea los marcadores ya guardados
                 if(addresses.size() > 0){
                     mMap.addMarker(new MarkerOptions()
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.marcador))
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.marcador_pcv))
                             .anchor(1.0f, 1.0f)
                             .title(addresses.get(0).getAddressLine(0))
                             .position(latLng));
