@@ -156,9 +156,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         public void onClick(View v) {
                             Log.d("foto","iniciando camara");
                             tomarFoto();
-                            //Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE); //creamos un intent para capturar foto
-                           // startActivityForResult(intent,0); // mandamos nuestro intent al metodo startActivityForResult
-
                         }
                     });
                 } catch (IOException e) {
@@ -170,10 +167,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-
     //////////////// Tomar la foto
-
-
 
     String currentPhotoPath;
 
@@ -223,18 +217,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     //Metodo que nos verifica si esta vacio o ya hay una foto tomada, se muestra la foto en el imageView
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        /*if (resultCode == RESULT_OK && data.hasExtra("data") && data.getExtras().get("data") != null) { //verificamos si no viene vacio el dato
-        bitmap = (Bitmap) data.getExtras().get("data");
-        fotoTomada.setImageBitmap(bitmap); //se pone nuestra foto
-    }*/
-
 
         if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
-            //Bundle extras = data.getExtras();
-            //Uri u =  data.getData();
-            //Bitmap imageBitmap = (Bitmap) extras.get("data");
             seTomofoto = true; //se valida que hay foto
-            fotoTomada.setImageURI(uri);
+            fotoTomada.setImageURI(uri); // Se asigna la foto a nuestro ImageView
 
             try {
                 bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
@@ -310,13 +296,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 params.put("id_usuario", String.valueOf(userid)); //pasamos nuestra variable userID previamente obtenida de la clase anterior
                 params.put("nombre", address.get(0).getThoroughfare() + '#'+ address.get(0).getFeatureName()); //obtenemos y pasamos el nombre de la direccion de la ubicacion marcada
                 params.put("latitud",Double.toString(latLng.latitude) ); //obtenemos y pasamos la latitud de la ubicacion marcada
-                Log.d("Test",Double.toString(address.get(0).getLatitude()) );
                 params.put("longitud", Double.toString(latLng.longitude)); //obtenemos y pasamos la longitud de la ubicacion marcada
-                Log.d("Test",Double.toString(address.get(0).getLongitude()));
                 params.put("imagen", imageData); //obtenemos y pasamos nuestra imagen
                 params.put("tipo", Integer.toString(0)); //pasamos una variable entera convertida a string con valor de 0
                 params.put("direccion", address.get(0).getAddressLine(0)); //obtenemos y pasamos la direccion de la ubicacion
-                params.put("ciudad", address.get(0).getLocality()); //obtenemos y pasamos la localidad osea la ciudad de la ubicacion
+                params.put("ciudad", address.get(0).getLocality() == null ? "" : address.get(0).getLocality()); //obtenemos y pasamos la localidad osea la ciudad de la ubicacion
                 params.put("observaciones",textoObservacion ); //obtenemos y pasamos nuestro texto con la observacion ya escrita
                 return params;
             }
@@ -330,7 +314,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 return headers;
             }
         };
-        jsonRequest.setRetryPolicy(new DefaultRetryPolicy(
+        jsonRequest.setRetryPolicy(new DefaultRetryPolicy(   // Se le asignan politicas tiempo de espera y reintentos a la petición
                 25000,
                 DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
                 DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));

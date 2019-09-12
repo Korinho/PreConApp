@@ -160,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        jsonRequest.setRetryPolicy(new DefaultRetryPolicy(
+        jsonRequest.setRetryPolicy(new DefaultRetryPolicy(  // Se le asignan politicas tiempo de espera y reintentos a la petición
                 10000,
                 DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
                 DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
