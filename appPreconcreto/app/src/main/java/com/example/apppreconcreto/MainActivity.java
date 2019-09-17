@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String SHARED_PREFS = "sharedPrefs";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -49,6 +50,13 @@ public class MainActivity extends AppCompatActivity {
         boton = findViewById(R.id.boton_login);
 
          preferences = getSharedPreferences(SHARED_PREFS,Context.MODE_PRIVATE);
+
+
+
+         if(preferences.getBoolean("isLogged", false) == true){
+             Intent intent = new Intent(MainActivity.this, MapsActivity.class);
+             startActivity(intent);
+         }
         boton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -65,6 +73,16 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
+
+    protected void onResume() {
+        super.onResume();
+        // The activity has become visible (it is now "resumed").
+        if(preferences.getBoolean("isLogged", false) == true){
+            Intent intent = new Intent(MainActivity.this, MapsActivity.class);
+            startActivity(intent);
+        }
+    }
+
 
 
 
@@ -93,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
 
                 SharedPreferences.Editor editor= preferences.edit(); //metemos nuestra variable en el SharedPreferences para que quede almacenada
                 editor.putInt("id_usuario",userid);
+                editor.putBoolean("isLogged", true);
                 editor.commit();
             }
         } catch (JSONException e) {

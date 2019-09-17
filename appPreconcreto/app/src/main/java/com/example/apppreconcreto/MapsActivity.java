@@ -509,4 +509,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
             }
         }
+
+
+    //////////////// Cargar y guardar configuración
+
+
+    //////// Guardar la configuración
+
+    public void guardarConfiguracion() {
+        SharedPreferences prefs =
+                getSharedPreferences( SHARED_PREFS , MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean("IsLogged", true);
+        editor.putInt("id_usuario", userid);
+        editor.commit();
     }
+
+    /////// Cargar la configuración
+
+
+
+
+}
+
+
+
+
+
