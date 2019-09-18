@@ -21,10 +21,12 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Base64;
 import android.util.Log;
 import android.view.MenuInflater;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -40,6 +42,8 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toolbar;
+
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -69,14 +73,14 @@ import java.util.Map;
 import static com.example.apppreconcreto.MainActivity.SHARED_PREFS;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
 
     private static final int PERMISSION_CODE = 1000 ;
     private static final int REQUEST_TAKE_PHOTO = 1 ;
     private GoogleMap mMap;
-    Button btn_hibrido, btn_normal, btn_satelital, btn_terreno;
     public int userid;
+    public String user;
     private Uri uri= null;
     private boolean seTomofoto = false;
     Bitmap bitmap;
@@ -172,12 +176,36 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    //// Método para crear el menú
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu, menu);
         return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.hibrido:
+                CambiarHibrido();
+                return true;
+            case R.id.satelital:
+                CambiarSatelital();
+                return true;
+            case R.id.normal:
+                CambiarNormal();
+                return true;
+            case R.id.terreno:
+                CambiarTerreno();
+                return true;
+            case R.id.close_session:
+                cerrar();
+                return true;
+            default:
+                return super.onContextItemSelected(item);
+        }
     }
 
     //////////////// Tomar la foto
@@ -343,13 +371,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_maps);
         preferences = getSharedPreferences(SHARED_PREFS,MODE_PRIVATE); //mandamos a llamar nuestra variable para entrar nuestro userid a esta actividad
         userid = preferences.getInt("id_usuario",0); //Obtenemos su valor tal cual se llama su parametro en la actividad anterior
-        btn_hibrido = findViewById(R.id.buttom_hibrido); //iniciamos nuestro boton para visualizar el mapa en modo hibrido
-        btn_normal = findViewById(R.id.button_normal); //iniciamos nuestro boton para visualizar el mapa en modo normal
-        btn_satelital = findViewById(R.id.button_satelital); //iniciamos nuestro boton para visualizar el mapa en modo satelital
-        btn_terreno = findViewById(R.id.button_terreno); //iniciamos nuestro boton para visualizar el mapa en modo terreno
+        user = preferences.getString("usuario",""); //Obtenemos el nombre del usuario
         getLocationPermission(); //inicializamos nuestro metodo para obtener permisos de localizacion en nuestro mapa
         initMap(); //metodo para iniciar nuestro mapa con todos sus componentes
-
+        setTitle("Usuario:  "+user); // Se establece el nombre de usuario en la barra superior de la App
     }
 
     //// Cambiar configuración del botón de atrás, para que al presionarlo se salga de la aplicación
@@ -374,19 +399,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
   //En esta seccion de metodos ponemos en funcion los botenes para cambiar de vista el mapa
-    public void CambiarHibrido(View view) {
+    public void CambiarHibrido() {
      mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
     }
 
-     public void CambiarSatelital(View view) {
+     public void CambiarSatelital() {
        mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
      }
 
-     public void CambiarTerreno(View view) {
+     public void CambiarTerreno() {
        mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
      }
 
-    public void CambiarNormal(View view) {
+    public void CambiarNormal() {
       mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
     }
  // Metodo para acceder a la localizacion de nuestro telefono
@@ -551,7 +576,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         editor.commit();
     }
 
-    /////// Cargar la configuración
+
+    // Cerrar la sesión
+
+    public void cerrar(){
+        SharedPreferences prefs =
+                getSharedPreferences( SHARED_PREFS , MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean("isLogged", false);
+        editor.putInt("id_usuario", userid);
+        editor.commit();
+        finish();
+    }
+
 
 
 

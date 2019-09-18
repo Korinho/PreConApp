@@ -111,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
 
                 SharedPreferences.Editor editor= preferences.edit(); //metemos nuestra variable en el SharedPreferences para que quede almacenada
                 editor.putInt("id_usuario",userid);
+                editor.putString("usuario", user.getText().toString().trim());
                 editor.putBoolean("isLogged", true);
                 editor.commit();
             }

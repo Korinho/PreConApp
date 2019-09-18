@@ -2,6 +2,18 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/hibrido"
+        android:title="Mapa Híbrido" />
+    <item
+        android:id="@+id/satelital"
+        android:title="Mapa Satelital" />
+    <item
+        android:id="@+id/normal"
+        android:title="Mapa Normal" />
+    <item
+        android:id="@+id/terreno"
+        android:title="Mapa de Terreno" />
+    <item
         android:id="@+id/close_session"
         android:title="Cerrar Sesión" />
 </menu>
