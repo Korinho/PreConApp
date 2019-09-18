@@ -23,6 +23,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.util.Base64;
 import android.util.Log;
+import android.view.MenuInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -37,6 +38,8 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import android.view.Menu;
+import android.view.MenuItem;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -87,6 +90,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1234;
     private static final float DEFAULT_ZOOM = 7f;
     public Boolean mLocationPermissionsGranted = false;
+
+
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -165,6 +170,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
           volleyProcess(); //mandamos a llamar nuestro metodo de actualizar marcadores
 
+    }
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu, menu);
+        return true;
     }
 
     //////////////// Tomar la foto
@@ -258,7 +271,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void postUbicacion( final List<Address> address, final LatLng latLng, final String textoObservacion) {
         // 2019-07-10 18:01:00.755 6573-6573/com.example.apppreconcreto D/postUbicaciones:: [Address[addressLines=[0:"Justino Sarmiento 63, El Maestro, 91920 Veracruz, Ver., México"],feature=63,admin=Veracruz,sub-admin=null,locality=Veracruz,thoroughfare=Justino Sarmiento,postalCode=91920,countryCode=MX,countryName=México,hasLatitude=true,latitude=19.159224,hasLongitude=true,longitude=-96.1323003,phone=null,url=null,extras=null]] - lat/lng: (19.15922132332285,-96.13221075385809)
         RequestQueue queue = Volley.newRequestQueue(this); //creamos nuestro objeto RequestQueue
-        String URL = "http://preconcretoveracruz.com/restapi/v2/ubicaciones"; //creamos una variable para nuestra URL la cual es nuestra direccion para postear en nuestra API rest
+        String URL = "http://preconcretover.com/restapi/v2/ubicaciones"; //creamos una variable para nuestra URL la cual es nuestra direccion para postear en nuestra API rest
 
         StringRequest jsonRequest = new StringRequest(Request.Method.POST, URL, new Response.Listener<String>() { //En nuestro jsonRequest le indicamos que usaremos el metodo POST y agregamos nuestra variable URL
             @Override
@@ -320,9 +333,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         queue.add(jsonRequest); //a nuestro objeto queue le agregamos nuestro jsonRequest para completar nuestro metodo de registrar una ubicacion en la API REST
     }
+
+
    //En nuestro metodo onCreate referenciaremos nuestras variables asi como tambien ciertos metodos
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         preferences = getSharedPreferences(SHARED_PREFS,MODE_PRIVATE); //mandamos a llamar nuestra variable para entrar nuestro userid a esta actividad
@@ -333,7 +349,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         btn_terreno = findViewById(R.id.button_terreno); //iniciamos nuestro boton para visualizar el mapa en modo terreno
         getLocationPermission(); //inicializamos nuestro metodo para obtener permisos de localizacion en nuestro mapa
         initMap(); //metodo para iniciar nuestro mapa con todos sus componentes
+
     }
+
+    //// Cambiar configuración del botón de atrás, para que al presionarlo se salga de la aplicación
+    public void onBackPressed(){
+        finish();
+        moveTaskToBack(true);
+
+    }
+
+
 //Metodo que nos pide permisos de localizacion al iniciar la actividad con mapa
     public void getLocationPermission(){
         String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
@@ -396,7 +422,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void volleyProcess(){ //este metodo lo mandamos a llamar cuando iniciamos por primera vez nuestro mapa y posteriormente en el metodo para refrescar marcadores
         RequestQueue requestQueue = Volley.newRequestQueue(this);
-        String url = "http://preconcretoveracruz.com/restapi/v2/ubicaciones";
+        String url = "http://preconcretover.com/restapi/v2/ubicaciones";
         Log.d("Test","Prueba");
         StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() { //como el metodo post declaramos ua variable requestQueue, una variable para la URL y le indicamos a nuestro metodo que sera una peticion GET
             @Override

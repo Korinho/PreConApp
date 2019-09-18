@@ -124,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
 
         RequestQueue queue = Volley.newRequestQueue(this); //creamos nuestro objeto RequestQue
 
-        String URL = "http://preconcretoveracruz.com/restapi/v2/login"; //creamos nuestra variable con la direccion de la API
+        String URL = "http://preconcretover.com/restapi/v2/login"; //creamos nuestra variable con la direccion de la API
 
         StringRequest jsonRequest = new StringRequest(Request.Method.POST, URL, new Response.Listener<String>() {
             //Declaramos nuestro StringReguest el cual cual le vamos a asignar el metodo POST para que mande la informacion a la API
