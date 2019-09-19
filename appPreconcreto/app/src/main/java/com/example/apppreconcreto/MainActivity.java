@@ -74,16 +74,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    protected void onResume() {
-        super.onResume();
-        // The activity has become visible (it is now "resumed").
-        if(preferences.getBoolean("isLogged", false) == true){
-            Intent intent = new Intent(MainActivity.this, MapsActivity.class);
-            startActivity(intent);
-        }
-    }
-
-
 
 
     private boolean validateLogin(String username, String password) {
@@ -108,10 +98,10 @@ public class MainActivity extends AppCompatActivity {
             for (int i = 0; i < arr.length(); i++) {    //recorremos el arreglo con un for para encontrar el usuario y la almacenamos en una variable: userid
                 JSONObject obj = arr.getJSONObject(i);
                 userid=obj.getInt("id_usuario");
-
+                String nombre = obj.getString("nombre");
                 SharedPreferences.Editor editor= preferences.edit(); //metemos nuestra variable en el SharedPreferences para que quede almacenada
                 editor.putInt("id_usuario",userid);
-                editor.putString("usuario", user.getText().toString().trim());
+                editor.putString("nombre",nombre);
                 editor.putBoolean("isLogged", true);
                 editor.commit();
             }

@@ -368,13 +368,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_maps);
         preferences = getSharedPreferences(SHARED_PREFS,MODE_PRIVATE); //mandamos a llamar nuestra variable para entrar nuestro userid a esta actividad
+
+        if(preferences.getBoolean("isLogged", false) == false){
+            finish();
+        }
+
         userid = preferences.getInt("id_usuario",0); //Obtenemos su valor tal cual se llama su parametro en la actividad anterior
-        user = preferences.getString("usuario",""); //Obtenemos el nombre del usuario
+        String nombre = preferences.getString("nombre",""); //Obtenemos el nombre del usuario
         getLocationPermission(); //inicializamos nuestro metodo para obtener permisos de localizacion en nuestro mapa
         initMap(); //metodo para iniciar nuestro mapa con todos sus componentes
-        setTitle("Usuario:  "+user); // Se establece el nombre de usuario en la barra superior de la App
+        setTitle(nombre); // Se establece el nombre de usuario en la barra superior de la App
     }
 
     //// Cambiar configuración del botón de atrás, para que al presionarlo se salga de la aplicación
