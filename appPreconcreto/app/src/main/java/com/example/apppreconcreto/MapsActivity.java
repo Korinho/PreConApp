@@ -2,6 +2,7 @@ package com.example.apppreconcreto;
 
 import android.Manifest;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -95,7 +96,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1234;
     private static final float DEFAULT_ZOOM = 7f;
     public Boolean mLocationPermissionsGranted = false;
-
+    private ProgressDialog progress;
+    private boolean cargando = false;
 
 
     @Override
@@ -156,6 +158,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                                 dialogObs.cancel();
                                 uri=null;
                                 fotoTomada = null;
+                                progress.show();
                             }else{
                             }
                         }
@@ -332,6 +335,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     JSONObject obj = new JSONObject(response); //creamos un objeto json al cual le pasaremos nuestro String response
                     boolean error = obj.getBoolean("error"); //creamos una variable booleana la cual le agregaremos nuestro objeto Json con el nombre "error"
                     if(error==false){ //validamos si error es falso, se agrega nuestro marcador
+                        cargando = true;
                     }else{
                         Toast.makeText(MapsActivity.this,"Error al agregar un marcador",Toast.LENGTH_SHORT).show(); //en caso de error mostramos el mensaje de error con un toast
                     }
@@ -406,6 +410,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         getLocationPermission(); //inicializamos nuestro metodo para obtener permisos de localizacion en nuestro mapa
         initMap(); //metodo para iniciar nuestro mapa con todos sus componentes
         setTitle(nombre); // Se establece el nombre de usuario en la barra superior de la App
+
+        progress = new ProgressDialog(this); // barra de progreso
+        progress.setTitle("Subiendo ubicación");
+        progress.setMessage("Un momento...");
+        progress.setCancelable(false); // previene sea ocultado vía clic
     }
 
     //// Cambiar configuración del botón de atrás, para que al presionarlo se salga de la aplicación
@@ -483,8 +492,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() { //como el metodo post declaramos ua variable requestQueue, una variable para la URL y le indicamos a nuestro metodo que sera una peticion GET
             @Override
             public void onResponse(String response) {
-                //Log.d("MapsResponse", response);
+                Log.d("MapsResponse", response);
                 crearMarcadores(response); //en nuestro metodo onResponse le pasamos el string response a nuestro metodo crearMarcadores
+                if (cargando == true){
+                    progress.dismiss();
+                    cargando = false;
+                }
                 refreshAllContent(10000); //tambien mandamos a llamar al metodo refreshAllContent y se le da el valor de 10000 osea 10 segundos
             }
         }, new Response.ErrorListener() {
