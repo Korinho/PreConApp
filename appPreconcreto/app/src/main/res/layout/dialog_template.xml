@@ -27,6 +27,12 @@
         android:src="@drawable/imagencamara" />
 
     <Button
+        android:id="@+id/gallery"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Seleccionar foto de galería" />
+
+    <Button
         android:id="@+id/save"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

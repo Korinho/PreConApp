@@ -78,6 +78,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private static final int PERMISSION_CODE = 1000 ;
     private static final int REQUEST_TAKE_PHOTO = 1 ;
+    private static final int PICK_IMAGE = 2 ;
     private GoogleMap mMap;
     public int userid;
     public String user;
@@ -134,6 +135,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     dialogObs.setContentView(R.layout.dialog_template);
                     final EditText write = dialogObs.findViewById(R.id.write); //instanciamos la variable del EditText de nuestro dialogo emergente
                     Button Savemycomment = dialogObs.findViewById(R.id.save);// instanciamos el boton de GUARDAR de nuestro dialogo emergente
+                    Button gallery = dialogObs.findViewById(R.id.gallery);
                     fotoTomada = dialogObs.findViewById(R.id.TomarFoto); //instanciamos nuestro imageView que actua como boton para tomar la foto
                     write.setEnabled(true); //asignamos las variables como verdaderas para que se puedan visualizar
                     Savemycomment.setEnabled(true);
@@ -149,11 +151,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             textoObservacion = write.getText().toString(); //Obtenemos el texto escrito de nuestra variable EditText
 
                             if(validateObservacion(textoObservacion,fotoTomada)){ //agregamos con un if nuestro metodo para validar observacion y foto
-                                //fotoTomada.setImageBitmap(bitmap);
+                                fotoTomada.setImageBitmap(bitmap);
                                 postUbicacion(addresses,latLng1,textoObservacion); // posteamos la ubicacion con los datos requeridos
                                 dialogObs.cancel();
                                 uri=null;
-                                bitmap = null;
                                 fotoTomada = null;
                             }else{
                             }
@@ -165,6 +166,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         public void onClick(View v) {
                             Log.d("foto","iniciando camara");
                             tomarFoto();
+                        }
+                    });
+
+                    gallery.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            galeria();
                         }
                     });
                 } catch (IOException e) {
@@ -252,7 +260,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
-    /////////////
+    /////////////   Foto elegida de galería
+
+    public void galeria (){
+        Intent gallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
+        startActivityForResult(gallery, PICK_IMAGE);
+    }
 
 
     //Metodo que nos verifica si esta vacio o ya hay una foto tomada, se muestra la foto en el imageView
@@ -270,6 +283,17 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
         //super.onActivityResult(requestCode,resultCode, data);
+
+        //// Esa acción se inicia solo si se eligió una imagen de galería
+        if(resultCode == RESULT_OK && requestCode == PICK_IMAGE){
+            uri = data.getData();
+            fotoTomada.setImageURI(uri);
+            try {
+                bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
     }
 
@@ -333,7 +357,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
                 Map<String, String> params = new HashMap();
-                String imageData = bitmap == null ? null :imageToString(bitmap) ; //obtenemos nuestra imagen ya transformada a String
+                String imageData = bitmap == null ? null : imageToString(bitmap) ; //obtenemos nuestra imagen ya transformada a String
                 params.put("id_usuario", String.valueOf(userid)); //pasamos nuestra variable userID previamente obtenida de la clase anterior
                 params.put("nombre", address.get(0).getThoroughfare() + '#'+ address.get(0).getFeatureName()); //obtenemos y pasamos el nombre de la direccion de la ubicacion marcada
                 params.put("latitud",Double.toString(latLng.latitude) ); //obtenemos y pasamos la latitud de la ubicacion marcada
@@ -343,6 +367,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 params.put("direccion", address.get(0).getAddressLine(0)); //obtenemos y pasamos la direccion de la ubicacion
                 params.put("ciudad", address.get(0).getLocality() == null ? "" : address.get(0).getLocality()); //obtenemos y pasamos la localidad osea la ciudad de la ubicacion
                 params.put("observaciones",textoObservacion ); //obtenemos y pasamos nuestro texto con la observacion ya escrita
+                bitmap = null;
                 return params;
             }
 
@@ -458,7 +483,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() { //como el metodo post declaramos ua variable requestQueue, una variable para la URL y le indicamos a nuestro metodo que sera una peticion GET
             @Override
             public void onResponse(String response) {
-                Log.d("MapsResponse", response);
+                //Log.d("MapsResponse", response);
                 crearMarcadores(response); //en nuestro metodo onResponse le pasamos el string response a nuestro metodo crearMarcadores
                 refreshAllContent(10000); //tambien mandamos a llamar al metodo refreshAllContent y se le da el valor de 10000 osea 10 segundos
             }
