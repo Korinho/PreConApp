@@ -149,7 +149,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             textoObservacion = write.getText().toString(); //Obtenemos el texto escrito de nuestra variable EditText
 
                             if(validateObservacion(textoObservacion,fotoTomada)){ //agregamos con un if nuestro metodo para validar observacion y foto
-                                fotoTomada.setImageBitmap(bitmap);
+                                //fotoTomada.setImageBitmap(bitmap);
                                 postUbicacion(addresses,latLng1,textoObservacion); // posteamos la ubicacion con los datos requeridos
                                 dialogObs.cancel();
                                 uri=null;
@@ -288,10 +288,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             Toast.makeText(this, "Se requiere su comentario", Toast.LENGTH_LONG).show();
             return false;
         }
-        if (seTomofoto == false) {
-            Toast.makeText(this, "Se requiere foto", Toast.LENGTH_LONG).show();
+        /*if (seTomofoto == false) {
+            Toast.makeText(this, "Se requiere foto", Toast.LENGTH_LONG).show();      //Comentariado debido a que se puede enviar la foto vacía
             return false;
-        }
+        }*/
         return true;
     }
 
@@ -299,7 +299,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void postUbicacion( final List<Address> address, final LatLng latLng, final String textoObservacion) {
         // 2019-07-10 18:01:00.755 6573-6573/com.example.apppreconcreto D/postUbicaciones:: [Address[addressLines=[0:"Justino Sarmiento 63, El Maestro, 91920 Veracruz, Ver., México"],feature=63,admin=Veracruz,sub-admin=null,locality=Veracruz,thoroughfare=Justino Sarmiento,postalCode=91920,countryCode=MX,countryName=México,hasLatitude=true,latitude=19.159224,hasLongitude=true,longitude=-96.1323003,phone=null,url=null,extras=null]] - lat/lng: (19.15922132332285,-96.13221075385809)
         RequestQueue queue = Volley.newRequestQueue(this); //creamos nuestro objeto RequestQueue
-        String URL = "http://preconcretover.com/restapi/v2/ubicaciones"; //creamos una variable para nuestra URL la cual es nuestra direccion para postear en nuestra API rest
+        String URL = "https://preconcretover.com/restapi/v2/ubicaciones"; //creamos una variable para nuestra URL la cual es nuestra direccion para postear en nuestra API rest
 
         StringRequest jsonRequest = new StringRequest(Request.Method.POST, URL, new Response.Listener<String>() { //En nuestro jsonRequest le indicamos que usaremos el metodo POST y agregamos nuestra variable URL
             @Override
@@ -333,12 +333,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
                 Map<String, String> params = new HashMap();
-                String imageData = imageToString(bitmap); //obtenemos nuestra imagen ya transformada a String
+                String imageData = bitmap == null ? null :imageToString(bitmap) ; //obtenemos nuestra imagen ya transformada a String
                 params.put("id_usuario", String.valueOf(userid)); //pasamos nuestra variable userID previamente obtenida de la clase anterior
                 params.put("nombre", address.get(0).getThoroughfare() + '#'+ address.get(0).getFeatureName()); //obtenemos y pasamos el nombre de la direccion de la ubicacion marcada
                 params.put("latitud",Double.toString(latLng.latitude) ); //obtenemos y pasamos la latitud de la ubicacion marcada
                 params.put("longitud", Double.toString(latLng.longitude)); //obtenemos y pasamos la longitud de la ubicacion marcada
-                params.put("imagen", imageData); //obtenemos y pasamos nuestra imagen
+                params.put("imagen", imageData == null ? "" : imageData); //obtenemos y pasamos nuestra imagen
                 params.put("tipo", Integer.toString(0)); //pasamos una variable entera convertida a string con valor de 0
                 params.put("direccion", address.get(0).getAddressLine(0)); //obtenemos y pasamos la direccion de la ubicacion
                 params.put("ciudad", address.get(0).getLocality() == null ? "" : address.get(0).getLocality()); //obtenemos y pasamos la localidad osea la ciudad de la ubicacion
@@ -453,7 +453,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     public void volleyProcess(){ //este metodo lo mandamos a llamar cuando iniciamos por primera vez nuestro mapa y posteriormente en el metodo para refrescar marcadores
         RequestQueue requestQueue = Volley.newRequestQueue(this);
-        String url = "http://preconcretover.com/restapi/v2/ubicaciones";
+        String url = "https://preconcretover.com/restapi/v2/ubicaciones";
         Log.d("Test","Prueba");
         StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() { //como el metodo post declaramos ua variable requestQueue, una variable para la URL y le indicamos a nuestro metodo que sera una peticion GET
             @Override
