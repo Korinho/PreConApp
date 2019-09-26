@@ -1,4 +1,4 @@
-package com.example.apppreconcreto;
+package com.precon.apppreconcreto;
 
 import android.Manifest;
 import android.app.Dialog;
@@ -18,7 +18,6 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
@@ -27,7 +26,6 @@ import android.util.Base64;
 import android.util.Log;
 import android.view.MenuInflater;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -43,7 +41,6 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toolbar;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -71,7 +68,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import static com.example.apppreconcreto.MainActivity.SHARED_PREFS;
+import static com.precon.apppreconcreto.MainActivity.SHARED_PREFS;
 
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
