@@ -144,7 +144,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     fotoTomada.setEnabled(true);
                     Geocoder geocoder = new Geocoder(MapsActivity.this, Locale.getDefault()); //creamos una varialble geocoder para obtener la direccion, latitud y longitud de cualquier ubicacion
                     final List<Address> addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1); //creamos una lista de donde obtendremos la latitud y// longitud
-                    Log.d("Test", Double.toString(latLng.latitude))
+                    //Log.d("Test", Double.toString(latLng.latitude))
                     ;
 
                     Savemycomment.setOnClickListener(new View.OnClickListener() { //creamos el metodo onClickListener para que guarde la observacion y la foto en la API
@@ -464,17 +464,17 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     @Override
                     public void onComplete(@NonNull Task task) {
                         if(task.isSuccessful()){ //si el task encuentra nuestra ubicacion manda a la vista a nuestra localizacion actual
-                            Log.d("maps","onComplete: found location!");
+                            //Log.d("maps","onComplete: found location!");
                             Location currentLocation = (Location) task.getResult(); //concatenamos nuestra variable locacion con el resultado obtenido del task
                             moveCamera(new LatLng(currentLocation.getLatitude(),currentLocation.getLongitude()), DEFAULT_ZOOM); //mueve la vista hacia nuestra localizacion actual
                         }else {
-                            Log.d("maps","onComplete: current location is null!"); // de lo contrario mostramos un mensaje en consola diciendo que la localizacion es nula
+                            //Log.d("maps","onComplete: current location is null!"); // de lo contrario mostramos un mensaje en consola diciendo que la localizacion es nula
                         }
                     }
                 });
             }
         }catch (SecurityException e){
-            Log.e("maps","getDeviceLocation: SecurityException: " + e.getMessage());
+            //Log.e("maps","getDeviceLocation: SecurityException: " + e.getMessage());
         }
     }
     //Metodo que mueve la camara de la aplicacion hacia nuestra ubicacion actual
@@ -488,11 +488,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void volleyProcess(){ //este metodo lo mandamos a llamar cuando iniciamos por primera vez nuestro mapa y posteriormente en el metodo para refrescar marcadores
         RequestQueue requestQueue = Volley.newRequestQueue(this);
         String url = "https://preconcretover.com/restapi/v2/ubicaciones";
-        Log.d("Test","Prueba");
+        //Log.d("Test","Prueba");
         StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() { //como el metodo post declaramos ua variable requestQueue, una variable para la URL y le indicamos a nuestro metodo que sera una peticion GET
             @Override
             public void onResponse(String response) {
-                Log.d("MapsResponse", response);
+                //Log.d("MapsResponse", response);
                 crearMarcadores(response); //en nuestro metodo onResponse le pasamos el string response a nuestro metodo crearMarcadores
                 if (cargando == true){
                     progress.dismiss();
@@ -503,7 +503,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.d("MapsError", error.toString());
+                //Log.d("MapsError", error.toString());
             }
         }) {
             @Override
@@ -563,7 +563,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onTick(long millisUntilFinished) {
             }
             public void onFinish() {
-                Log.i("SCROLLS ", "UPDATE CONTENT HERE ");
+               // Log.i("SCROLLS ", "UPDATE CONTENT HERE ");
                 volleyProcess();
             }
         }.start();
