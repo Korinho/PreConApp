@@ -1,4 +1,4 @@
-package com.precon.apppreconcreto;
+package com.example.apppreconcreto;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
