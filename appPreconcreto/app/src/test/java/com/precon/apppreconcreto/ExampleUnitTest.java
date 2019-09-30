@@ -1,4 +1,4 @@
-package com.example.apppreconcreto;
+package com.precon.apppreconcreto;
 
 import org.junit.Test;
 
