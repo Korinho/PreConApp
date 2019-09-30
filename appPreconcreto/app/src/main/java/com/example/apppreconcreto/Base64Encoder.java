@@ -2,7 +2,7 @@
 // All rights reserved.  Use of this class is limited.
 // Please see the LICENSE for more information.
 
-package com.precon.apppreconcreto;
+package com.example.apppreconcreto;
 
 import java.io.*;
 
