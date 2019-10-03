@@ -3,6 +3,7 @@ package com.precon.apppreconcreto;
 import android.Manifest;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -82,10 +83,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public String user;
     private Uri uri= null;
     private boolean seTomofoto = false;
+    private Button Savemycomment;
+    private Button gallery;
     Bitmap bitmap;
     private ImageView fotoTomada;
     private SharedPreferences preferences;
     Dialog dialogObs;
+    private EditText write;
     private FusedLocationProviderClient mFusedLocationProviderClient;
     private String textoObservacion = "";
     private static final String FINE_LOCATION=Manifest.permission.ACCESS_FINE_LOCATION;
@@ -95,6 +99,50 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public Boolean mLocationPermissionsGranted = false;
     private ProgressDialog progress;
     private boolean cargando = false;
+
+    //En nuestro metodo onCreate referenciaremos nuestras variables asi como tambien ciertos metodos
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+
+        super.onCreate(savedInstanceState);
+
+        dialogObs = new Dialog(MapsActivity.this); //inicializamos nuestra ventana de dialogo que aparecera cuando agregamos un marcador.
+        dialogObs.setContentView(R.layout.dialog_template);
+        write = dialogObs.findViewById(R.id.write); //instanciamos la variable del EditText de nuestro dialogo emergente
+        Savemycomment = dialogObs.findViewById(R.id.save);// instanciamos el boton de GUARDAR de nuestro dialogo emergente
+        gallery = dialogObs.findViewById(R.id.gallery);
+        fotoTomada = dialogObs.findViewById(R.id.TomarFoto); //instanciamos nuestro imageView que actua como boton para tomar la foto
+        write.setEnabled(true); //asignamos las variables como verdaderas para que se puedan visualizar
+        Savemycomment.setEnabled(true);
+        fotoTomada.setEnabled(true);
+
+        setContentView(R.layout.activity_maps);
+        preferences = getSharedPreferences(SHARED_PREFS,MODE_PRIVATE); //mandamos a llamar nuestra variable para entrar nuestro userid a esta actividad
+
+        if(preferences.getBoolean("isLogged", false) == false){
+            finish();
+        }
+
+        userid = preferences.getInt("id_usuario",0); //Obtenemos su valor tal cual se llama su parametro en la actividad anterior
+        String nombre = preferences.getString("nombre",""); //Obtenemos el nombre del usuario
+        getLocationPermission(); //inicializamos nuestro metodo para obtener permisos de localizacion en nuestro mapa
+        initMap(); //metodo para iniciar nuestro mapa con todos sus componentes
+        setTitle(nombre); // Se establece el nombre de usuario en la barra superior de la App
+
+        progress = new ProgressDialog(this); // barra de progreso
+        progress.setTitle("Subiendo ubicación");
+        progress.setMessage("Un momento...");
+        progress.setCancelable(false); // previene sea ocultado vía clic
+
+        dialogObs.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                write.setText("");
+                bitmap = null;
+                uri = null;
+            }
+        });
+    }
 
 
     @Override
@@ -130,20 +178,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 try { //encerramos nuestro siguiente codigo en un try & catch
                     seTomofoto = false; //ponemos nuestra variable falsa por que se inicia por primera vez el dialogo para tomar foto, cuando se tome se vuelve true
                     final LatLng latLng1 = latLng; //declaramos nuestra variable latLng1 para obtener latitud y longitud de la ubicacion que querramos guardar
-                    dialogObs = new Dialog(MapsActivity.this); //inicializamos nuestra ventana de dialogo que aparecera cuando agregamos un marcador.
-                    dialogObs.setContentView(R.layout.dialog_template);
-                    final EditText write = dialogObs.findViewById(R.id.write); //instanciamos la variable del EditText de nuestro dialogo emergente
-                    Button Savemycomment = dialogObs.findViewById(R.id.save);// instanciamos el boton de GUARDAR de nuestro dialogo emergente
-                    Button gallery = dialogObs.findViewById(R.id.gallery);
-                    fotoTomada = dialogObs.findViewById(R.id.TomarFoto); //instanciamos nuestro imageView que actua como boton para tomar la foto
-                    write.setEnabled(true); //asignamos las variables como verdaderas para que se puedan visualizar
-                    Savemycomment.setEnabled(true);
-                    fotoTomada.setEnabled(true);
                     Geocoder geocoder = new Geocoder(MapsActivity.this, Locale.getDefault()); //creamos una varialble geocoder para obtener la direccion, latitud y longitud de cualquier ubicacion
                     final List<Address> addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1); //creamos una lista de donde obtendremos la latitud y// longitud
                     //Log.d("Test", Double.toString(latLng.latitude))
                     ;
-
                     Savemycomment.setOnClickListener(new View.OnClickListener() { //creamos el metodo onClickListener para que guarde la observacion y la foto en la API
                         @Override
                         public void onClick(View v) {
@@ -154,13 +192,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                                 postUbicacion(addresses,latLng1,textoObservacion); // posteamos la ubicacion con los datos requeridos
                                 dialogObs.cancel();
                                 uri=null;
-                                fotoTomada = null;
                                 progress.show();
                             }else{
                             }
                         }
                     });
                     dialogObs.show();
+                    fotoTomada.setImageDrawable(getResources().getDrawable(R.drawable.imagencamara));
                     fotoTomada.setOnClickListener(new View.OnClickListener() { // metodo que se ejecuta al presionar el imageView de la camara
                         @Override
                         public void onClick(View v) {
@@ -274,9 +312,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
             seTomofoto = true; //se valida que hay foto
-            fotoTomada.setImageURI(uri); // Se asigna la foto a nuestro ImageView
 
             try {
+                fotoTomada.setImageURI(uri); // Se asigna la foto a nuestro ImageView
                 bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -287,8 +325,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         //// Esa acción se inicia solo si se eligió una imagen de galería
         if(resultCode == RESULT_OK && requestCode == PICK_IMAGE){
             uri = data.getData();
-            fotoTomada.setImageURI(uri);
             try {
+                fotoTomada.setImageURI(uri);
                 bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -389,34 +427,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
-   //En nuestro metodo onCreate referenciaremos nuestras variables asi como tambien ciertos metodos
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
 
-        super.onCreate(savedInstanceState);
-
-        setContentView(R.layout.activity_maps);
-        preferences = getSharedPreferences(SHARED_PREFS,MODE_PRIVATE); //mandamos a llamar nuestra variable para entrar nuestro userid a esta actividad
-
-        if(preferences.getBoolean("isLogged", false) == false){
-            finish();
-        }
-
-        userid = preferences.getInt("id_usuario",0); //Obtenemos su valor tal cual se llama su parametro en la actividad anterior
-        String nombre = preferences.getString("nombre",""); //Obtenemos el nombre del usuario
-        getLocationPermission(); //inicializamos nuestro metodo para obtener permisos de localizacion en nuestro mapa
-        initMap(); //metodo para iniciar nuestro mapa con todos sus componentes
-        setTitle(nombre); // Se establece el nombre de usuario en la barra superior de la App
-
-        progress = new ProgressDialog(this); // barra de progreso
-        progress.setTitle("Subiendo ubicación");
-        progress.setMessage("Un momento...");
-        progress.setCancelable(false); // previene sea ocultado vía clic
-    }
 
     //// Cambiar configuración del botón de atrás, para que al presionarlo se salga de la aplicación
     public void onBackPressed(){
-        finish();
         moveTaskToBack(true);
 
     }
