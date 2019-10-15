@@ -1,6 +1,7 @@
 package com.precon.apppreconcreto;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
@@ -467,27 +468,37 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
  // Metodo para acceder a la localizacion de nuestro telefono
     private void getDeviceLocation(){
-        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
-        try{
-            if(mLocationPermissionsGranted){
-                Task location = mFusedLocationProviderClient.getLastLocation();
-                location.addOnCompleteListener(new OnCompleteListener() {
-                    @Override
-                    public void onComplete(@NonNull Task task) {
-                        if(task.isSuccessful()){ //si el task encuentra nuestra ubicacion manda a la vista a nuestra localizacion actual
-                            //Log.d("maps","onComplete: found location!");
-                            Location currentLocation = (Location) task.getResult(); //concatenamos nuestra variable locacion con el resultado obtenido del task
-                            moveCamera(new LatLng(currentLocation.getLatitude(),currentLocation.getLongitude()), DEFAULT_ZOOM); //mueve la vista hacia nuestra localizacion actual
-                        }else {
-                            //Log.d("maps","onComplete: current location is null!"); // de lo contrario mostramos un mensaje en consola diciendo que la localizacion es nula
-                        }
-                    }
-                });
-            }
-        }catch (SecurityException e){
-            //Log.e("maps","getDeviceLocation: SecurityException: " + e.getMessage());
-        }
+         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+         try{
+             if(mLocationPermissionsGranted){
+                 Task location = mFusedLocationProviderClient.getLastLocation();
+                 location.addOnCompleteListener(new OnCompleteListener() {
+                     @Override
+                     public void onComplete(@NonNull Task task) {
+                         if(task.isSuccessful() && task.getResult() != null){ //si el task encuentra nuestra ubicacion manda a la vista a nuestra localizacion actual
+                             //Log.d("maps","onComplete: found location!");
+                             Location currentLocation = (Location) task.getResult(); //concatenamos nuestra variable locacion con el resultado obtenido del task
+                             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(currentLocation.getLatitude(),currentLocation.getLongitude()),    DEFAULT_ZOOM)); //mueve la vista hacia nuestra localizacion actual
+                         }else {
+                             Log.d("maps","onComplete: current location is null!"); // de lo contrario mostramos un mensaje en consola diciendo que la localizacion es nula
+                             AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this);
+                             builder.setCancelable(false);
+                             builder.setMessage("Activa la ubicación/gps y vuelve a iniciar la aplicación");
+                             builder.setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
+                                 public void onClick(DialogInterface dialog, int id) {
+                                     ActivityCompat.finishAffinity(MapsActivity.this);
+                                 }
+                             });
+                             builder.show();
+                         }
+                     }
+                 });
+             }
+         }catch (SecurityException e){
+             //Log.e("maps","getDeviceLocation: SecurityException: " + e.getMessage());
+         }
     }
+
     //Metodo que mueve la camara de la aplicacion hacia nuestra ubicacion actual
     private void moveCamera(LatLng latLng, float zoom){
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng,zoom));
