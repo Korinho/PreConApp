@@ -515,6 +515,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             //Log.e("maps","getDeviceLocation: SecurityException: " + e.getMessage());
         }
     }
+
     //Metodo que mueve la camara de la aplicacion hacia nuestra ubicacion actual
     private void moveCamera(LatLng latLng, float zoom){
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng,zoom));
@@ -732,7 +733,3 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
 }
-
-
-
-
