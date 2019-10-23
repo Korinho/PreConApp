@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.precon.apppreconcreto">
+    package="com.precon.apppreconcretotest">
     <!--
          The ACCESS_COARSE/FINE_LOCATION permissions are not required to use
          Google Maps Android API v2, but you must specify either coarse or fine
@@ -45,11 +45,11 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name="com.precon.apppreconcreto.MapsActivity"
+            android:name="com.precon.apppreconcretotest.MapsActivity"
             android:label="@string/title_activity_maps"
             android:largeHeap="true"/>
 
-        <activity android:name="com.precon.apppreconcreto.MainActivity">
+        <activity android:name="com.precon.apppreconcretotest.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -59,7 +59,7 @@
 
         <provider
             android:name="android.support.v4.content.FileProvider"
-            android:authorities="com.precon.android.fileprovider"
+            android:authorities="com.precon.android.fileprovidertest"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

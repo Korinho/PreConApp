@@ -1,10 +1,13 @@
-package com.precon.apppreconcreto;
+package com.precon.apppreconcretotest;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 
@@ -24,11 +27,13 @@ import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Base64;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
@@ -57,10 +62,14 @@ import com.google.android.gms.tasks.Task;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -68,7 +77,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import static com.precon.apppreconcreto.MainActivity.SHARED_PREFS;
+import static com.precon.apppreconcretotest.MainActivity.SHARED_PREFS;
 
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
@@ -82,10 +91,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public String user;
     private Uri uri= null;
     private boolean seTomofoto = false;
+    private Button Savemycomment;
+    private Button gallery;
     Bitmap bitmap;
     private ImageView fotoTomada;
     private SharedPreferences preferences;
     Dialog dialogObs;
+    private EditText write;
+    private TextView versionText;
     private FusedLocationProviderClient mFusedLocationProviderClient;
     private String textoObservacion = "";
     private static final String FINE_LOCATION=Manifest.permission.ACCESS_FINE_LOCATION;
@@ -96,13 +109,57 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private ProgressDialog progress;
     private boolean cargando = false;
 
+    //En nuestro metodo onCreate referenciaremos nuestras variables asi como tambien ciertos metodos
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+
+        super.onCreate(savedInstanceState);
+
+        dialogObs = new Dialog(MapsActivity.this); //inicializamos nuestra ventana de dialogo que aparecera cuando agregamos un marcador.
+        dialogObs.setContentView(R.layout.dialog_template);
+        write = dialogObs.findViewById(R.id.write); //instanciamos la variable del EditText de nuestro dialogo emergente
+        Savemycomment = dialogObs.findViewById(R.id.save);// instanciamos el boton de GUARDAR de nuestro dialogo emergente
+        gallery = dialogObs.findViewById(R.id.gallery);
+        fotoTomada = dialogObs.findViewById(R.id.TomarFoto); //instanciamos nuestro imageView que actua como boton para tomar la foto
+        write.setEnabled(true); //asignamos las variables como verdaderas para que se puedan visualizar
+        Savemycomment.setEnabled(true);
+        fotoTomada.setEnabled(true);
+
+        setContentView(R.layout.activity_maps);
+        preferences = getSharedPreferences(SHARED_PREFS,MODE_PRIVATE); //mandamos a llamar nuestra variable para entrar nuestro userid a esta actividad
+
+        if(preferences.getBoolean("isLogged", false) == false){
+            finish();
+        }
+
+        userid = preferences.getInt("id_usuario",0); //Obtenemos su valor tal cual se llama su parametro en la actividad anterior
+        String nombre = preferences.getString("nombre",""); //Obtenemos el nombre del usuario
+        getLocationPermission(); //inicializamos nuestro metodo para obtener permisos de localizacion en nuestro mapa
+        initMap(); //metodo para iniciar nuestro mapa con todos sus componentes
+        setTitle(nombre); // Se establece el nombre de usuario en la barra superior de la App
+
+        progress = new ProgressDialog(this); // barra de progreso
+        progress.setTitle("Subiendo ubicación");
+        progress.setMessage("Un momento...");
+        progress.setCancelable(false); // previene sea ocultado vía clic
+
+        dialogObs.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                write.setText("");
+                bitmap = null;
+                uri = null;
+            }
+        });
+    }
+
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
 
         mMap = googleMap; //inicializamos nuestra variable del mapa
 
-     if(mLocationPermissionsGranted){  // iniciamos nuestro if para verificar si tenemos permisos activos o denegados
+        if(mLocationPermissionsGranted){  // iniciamos nuestro if para verificar si tenemos permisos activos o denegados
             getDeviceLocation(); //metodo para recuperar la ubicacion actual de nuestro dispositivo
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) // verifica si el permiso de localizacion fue permitido o denegado
                     != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission
@@ -111,9 +168,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){ //verifica si el permiso de camara y para acceder a galeria fue permitido o denegado
                 if (checkSelfPermission(Manifest.permission.CAMERA)==
-                PackageManager.PERMISSION_DENIED||
-                checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
-                        PackageManager.PERMISSION_DENIED){
+                        PackageManager.PERMISSION_DENIED||
+                        checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+                                PackageManager.PERMISSION_DENIED){
                     String[] permission = {Manifest.permission.CAMERA,Manifest.permission.WRITE_EXTERNAL_STORAGE};
                     requestPermissions(permission,PERMISSION_CODE);
                 }
@@ -130,20 +187,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 try { //encerramos nuestro siguiente codigo en un try & catch
                     seTomofoto = false; //ponemos nuestra variable falsa por que se inicia por primera vez el dialogo para tomar foto, cuando se tome se vuelve true
                     final LatLng latLng1 = latLng; //declaramos nuestra variable latLng1 para obtener latitud y longitud de la ubicacion que querramos guardar
-                    dialogObs = new Dialog(MapsActivity.this); //inicializamos nuestra ventana de dialogo que aparecera cuando agregamos un marcador.
-                    dialogObs.setContentView(R.layout.dialog_template);
-                    final EditText write = dialogObs.findViewById(R.id.write); //instanciamos la variable del EditText de nuestro dialogo emergente
-                    Button Savemycomment = dialogObs.findViewById(R.id.save);// instanciamos el boton de GUARDAR de nuestro dialogo emergente
-                    Button gallery = dialogObs.findViewById(R.id.gallery);
-                    fotoTomada = dialogObs.findViewById(R.id.TomarFoto); //instanciamos nuestro imageView que actua como boton para tomar la foto
-                    write.setEnabled(true); //asignamos las variables como verdaderas para que se puedan visualizar
-                    Savemycomment.setEnabled(true);
-                    fotoTomada.setEnabled(true);
                     Geocoder geocoder = new Geocoder(MapsActivity.this, Locale.getDefault()); //creamos una varialble geocoder para obtener la direccion, latitud y longitud de cualquier ubicacion
                     final List<Address> addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1); //creamos una lista de donde obtendremos la latitud y// longitud
                     //Log.d("Test", Double.toString(latLng.latitude))
                     ;
-
                     Savemycomment.setOnClickListener(new View.OnClickListener() { //creamos el metodo onClickListener para que guarde la observacion y la foto en la API
                         @Override
                         public void onClick(View v) {
@@ -154,13 +201,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                                 postUbicacion(addresses,latLng1,textoObservacion); // posteamos la ubicacion con los datos requeridos
                                 dialogObs.cancel();
                                 uri=null;
-                                fotoTomada = null;
                                 progress.show();
                             }else{
                             }
                         }
                     });
                     dialogObs.show();
+                    fotoTomada.setImageDrawable(getResources().getDrawable(R.drawable.imagencamara));
                     fotoTomada.setOnClickListener(new View.OnClickListener() { // metodo que se ejecuta al presionar el imageView de la camara
                         @Override
                         public void onClick(View v) {
@@ -180,7 +227,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
             }
         });
-          volleyProcess(); //mandamos a llamar nuestro metodo de actualizar marcadores
+        volleyProcess(); //mandamos a llamar nuestro metodo de actualizar marcadores
+        /*String contra = "1234" ;
+        try{
+        Toast.makeText(getApplicationContext(),SHA1(contra),Toast.LENGTH_LONG).show();
+        Log.d("Hash",SHA1(contra));
+        } catch (Exception e){}*/
+
 
     }
 
@@ -207,6 +260,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 return true;
             case R.id.terreno:
                 CambiarTerreno();
+                return true;
+            case R.id.about:
+                aboutDialog().show();
                 return true;
             case R.id.close_session:
                 cerrar();
@@ -250,7 +306,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             // Continue only if the File was successfully created
             if (photoFile != null) {
                 Uri photoURI = FileProvider.getUriForFile(this,
-                        "com.precon.android.fileprovider",
+                        "com.precon.android.fileprovidertest",
                         photoFile);
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                 uri = photoURI;
@@ -274,9 +330,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
             seTomofoto = true; //se valida que hay foto
-            fotoTomada.setImageURI(uri); // Se asigna la foto a nuestro ImageView
 
             try {
+                fotoTomada.setImageURI(uri); // Se asigna la foto a nuestro ImageView
                 bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -287,8 +343,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         //// Esa acción se inicia solo si se eligió una imagen de galería
         if(resultCode == RESULT_OK && requestCode == PICK_IMAGE){
             uri = data.getData();
-            fotoTomada.setImageURI(uri);
             try {
+                fotoTomada.setImageURI(uri);
                 bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -298,7 +354,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
-//Metodo para pasar la image a formato String
+    //Metodo para pasar la image a formato String
     private String imageToString(Bitmap bitmap){ //creamos nuestro metodo imageToString que recibira un objeto bitmap
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(); // creamos un objeto ByteArrayOutputStream
         bitmap.compress(Bitmap.CompressFormat.JPEG,50,byteArrayOutputStream); //concatenamos nuestra variable bitmap para convertirla a formato JPEG
@@ -389,40 +445,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
-   //En nuestro metodo onCreate referenciaremos nuestras variables asi como tambien ciertos metodos
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
 
-        super.onCreate(savedInstanceState);
-
-        setContentView(R.layout.activity_maps);
-        preferences = getSharedPreferences(SHARED_PREFS,MODE_PRIVATE); //mandamos a llamar nuestra variable para entrar nuestro userid a esta actividad
-
-        if(preferences.getBoolean("isLogged", false) == false){
-            finish();
-        }
-
-        userid = preferences.getInt("id_usuario",0); //Obtenemos su valor tal cual se llama su parametro en la actividad anterior
-        String nombre = preferences.getString("nombre",""); //Obtenemos el nombre del usuario
-        getLocationPermission(); //inicializamos nuestro metodo para obtener permisos de localizacion en nuestro mapa
-        initMap(); //metodo para iniciar nuestro mapa con todos sus componentes
-        setTitle(nombre); // Se establece el nombre de usuario en la barra superior de la App
-
-        progress = new ProgressDialog(this); // barra de progreso
-        progress.setTitle("Subiendo ubicación");
-        progress.setMessage("Un momento...");
-        progress.setCancelable(false); // previene sea ocultado vía clic
-    }
 
     //// Cambiar configuración del botón de atrás, para que al presionarlo se salga de la aplicación
     public void onBackPressed(){
-        finish();
         moveTaskToBack(true);
 
     }
 
 
-//Metodo que nos pide permisos de localizacion al iniciar la actividad con mapa
+    //Metodo que nos pide permisos de localizacion al iniciar la actividad con mapa
     public void getLocationPermission(){
         String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
         if (ContextCompat.checkSelfPermission(this.getApplicationContext(), FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -435,23 +467,23 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             ActivityCompat.requestPermissions(this, permissions, LOCATION_PERMISSION_REQUEST_CODE);
         }
     }
-  //En esta seccion de metodos ponemos en funcion los botenes para cambiar de vista el mapa
+    //En esta seccion de metodos ponemos en funcion los botenes para cambiar de vista el mapa
     public void CambiarHibrido() {
-     mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+        mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
     }
 
-     public void CambiarSatelital() {
-       mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-     }
+    public void CambiarSatelital() {
+        mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+    }
 
-     public void CambiarTerreno() {
-       mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
-     }
+    public void CambiarTerreno() {
+        mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+    }
 
     public void CambiarNormal() {
-      mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
     }
- // Metodo para acceder a la localizacion de nuestro telefono
+    // Metodo para acceder a la localizacion de nuestro telefono
     private void getDeviceLocation(){
         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
         try{
@@ -460,12 +492,21 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 location.addOnCompleteListener(new OnCompleteListener() {
                     @Override
                     public void onComplete(@NonNull Task task) {
-                        if(task.isSuccessful()){ //si el task encuentra nuestra ubicacion manda a la vista a nuestra localizacion actual
+                        if(task.isSuccessful() && task.getResult() != null){ //si el task encuentra nuestra ubicacion manda a la vista a nuestra localizacion actual
                             //Log.d("maps","onComplete: found location!");
                             Location currentLocation = (Location) task.getResult(); //concatenamos nuestra variable locacion con el resultado obtenido del task
-                            moveCamera(new LatLng(currentLocation.getLatitude(),currentLocation.getLongitude()), DEFAULT_ZOOM); //mueve la vista hacia nuestra localizacion actual
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(currentLocation.getLatitude(),currentLocation.getLongitude()), DEFAULT_ZOOM)); //mueve la vista hacia nuestra localizacion actual
                         }else {
-                            //Log.d("maps","onComplete: current location is null!"); // de lo contrario mostramos un mensaje en consola diciendo que la localizacion es nula
+                            Log.d("maps","onComplete: current location is null!"); // de lo contrario mostramos un mensaje en consola diciendo que la localizacion es nula
+                            AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this);
+                            builder.setCancelable(false);
+                            builder.setMessage("Activa la ubicación/gps y vuelve a iniciar la aplicación");
+                            builder.setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    ActivityCompat.finishAffinity(MapsActivity.this);
+                                }
+                            });
+                            builder.show();
                         }
                     }
                 });
@@ -548,9 +589,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             }
 
-       } catch (JSONException e) {
-           e.printStackTrace();
-       } catch (IOException e) {
+        } catch (JSONException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -560,12 +601,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onTick(long millisUntilFinished) {
             }
             public void onFinish() {
-               // Log.i("SCROLLS ", "UPDATE CONTENT HERE ");
+                // Log.i("SCROLLS ", "UPDATE CONTENT HERE ");
                 volleyProcess();
             }
         }.start();
     }
-//Metodo que inicializa el fragmento del mapa y lo valida que no venga vacio
+    //Metodo que inicializa el fragmento del mapa y lo valida que no venga vacio
     private void initMap(){
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         if(mapFragment != null){
@@ -575,32 +616,32 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             mapFragment.getMapAsync(MapsActivity.this);
         }
     }
-        //metodo que valida que los permisos sean concedidos o denegados, permisos de localizacion y de acceso a camara y galeria
-        @Override
-        public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-            mLocationPermissionsGranted = false;
-            switch (requestCode){
-                case LOCATION_PERMISSION_REQUEST_CODE:{
-                    if(grantResults.length > 0 ){
-                        for(int i=0;i < grantResults.length; i++){
-                            if(grantResults[i]!= PackageManager.PERMISSION_GRANTED){
-                                mLocationPermissionsGranted = false;
-                                return;
-                            }
+    //metodo que valida que los permisos sean concedidos o denegados, permisos de localizacion y de acceso a camara y galeria
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        mLocationPermissionsGranted = false;
+        switch (requestCode){
+            case LOCATION_PERMISSION_REQUEST_CODE:{
+                if(grantResults.length > 0 ){
+                    for(int i=0;i < grantResults.length; i++){
+                        if(grantResults[i]!= PackageManager.PERMISSION_GRANTED){
+                            mLocationPermissionsGranted = false;
+                            return;
                         }
-                        mLocationPermissionsGranted=true;
-                        initMap();
                     }
+                    mLocationPermissionsGranted=true;
+                    initMap();
                 }
-                case PERMISSION_CODE:{
-                    if(grantResults.length > 0 && grantResults [0] ==
-                            PackageManager.PERMISSION_GRANTED){
-                    }else{
-                        Toast.makeText(this, "Permiso denegado", Toast.LENGTH_SHORT).show();
-                    }
+            }
+            case PERMISSION_CODE:{
+                if(grantResults.length > 0 && grantResults [0] ==
+                        PackageManager.PERMISSION_GRANTED){
+                }else{
+                    Toast.makeText(this, "Permiso denegado", Toast.LENGTH_SHORT).show();
                 }
             }
         }
+    }
 
 
     //////////////// Cargar y guardar configuración
@@ -630,12 +671,67 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         finish();
     }
 
+    //////////////////////////// Encriptar contraseña
+
+    private static String convertToHex(byte[] data) {
+        StringBuilder buf = new StringBuilder();
+        for (byte b : data) {
+            int halfbyte = (b >>> 4) & 0x0F;
+            int two_halfs = 0;
+            do {
+                buf.append((0 <= halfbyte) && (halfbyte <= 9) ? (char) ('0' + halfbyte) : (char) ('a' + (halfbyte - 10)));
+                halfbyte = b & 0x0F;
+            } while (two_halfs++ < 1);
+        }
+        return buf.toString();
+    }
+
+    public static String SHA1(String text) throws NoSuchAlgorithmException, UnsupportedEncodingException {
+        MessageDigest md = MessageDigest.getInstance("SHA-1");
+        byte[] textBytes = text.getBytes("iso-8859-1");
+        md.update(textBytes, 0, textBytes.length);
+        byte[] sha1hash = md.digest();
+        return convertToHex(sha1hash);
+    }
+
+
+    //////////// Acerca de
+
+    public Dialog aboutDialog () {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this);
+        LayoutInflater inflater = MapsActivity.this.getLayoutInflater();
+        View v = inflater.inflate(R.layout.about_layout, null);
+
+        builder.setView(v)
+                .setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int id) {
+
+                    }
+                });
+
+        versionText = v.findViewById(R.id.about_version);
+        String version = "";
+
+        try {
+            PackageInfo pInfo = MapsActivity.this.getPackageManager().getPackageInfo(getPackageName(), 0);
+            version = pInfo.versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        versionText.setText("Versión: "+ version);
+        Dialog about = builder.create();
+
+
+        return about;
+    }
+
 
 
 
 
 }
-
 
 
 

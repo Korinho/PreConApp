@@ -14,6 +14,9 @@
         android:id="@+id/terreno"
         android:title="Mapa de Terreno" />
     <item
+        android:id="@+id/about"
+        android:title="Acerca de" />
+    <item
         android:id="@+id/close_session"
         android:title="Cerrar Sesión" />
 </menu>
