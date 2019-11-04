@@ -5,7 +5,7 @@
     <color name="colorAccent">#FF4081</color>
 
     <color name="dimBackgroundColor">#40000000</color>
-    <color name="brightBackgroundColor">#ffffffff</color>
+    <color name="brightBackgroundColor">#FFFFFF</color>
     <color name="colorRowSeparator">#cccccc</color>
     <color name="filterBackground">#cccccc</color>
     <color name="filterText">#FFFFFF</color>

@@ -47,7 +47,17 @@
         <activity
             android:name="com.precon.apppreconcretotest.MapsActivity"
             android:label="@string/title_activity_maps"
-            android:largeHeap="true"/>
+            android:largeHeap="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.APP_MAPS" />
+                <data android:mimeType="text/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.APP_MAPS" />
+            </intent-filter>
+        </activity>
 
         <activity android:name="com.precon.apppreconcretotest.MainActivity">
             <intent-filter>
@@ -58,7 +68,7 @@
         </activity>
 
         <provider
-            android:name="android.support.v4.content.FileProvider"
+            android:name="androidx.core.content.FileProvider"
             android:authorities="com.precon.android.fileprovidertest"
             android:exported="false"
             android:grantUriPermissions="true">

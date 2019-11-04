@@ -18,13 +18,15 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.Environment;
+import android.os.StrictMode;
 import android.provider.MediaStore;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
+
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 import android.os.Bundle;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.content.FileProvider;
-import android.support.v7.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -42,11 +44,13 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.HttpResponse;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -58,19 +62,30 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.widget.Autocomplete;
+import com.google.android.libraries.places.widget.AutocompleteActivity;
+import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
+import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -86,18 +101,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int PERMISSION_CODE = 1000 ;
     private static final int REQUEST_TAKE_PHOTO = 1 ;
     private static final int PICK_IMAGE = 2 ;
+    private static final int AUTOCOMPLETE_REQUEST_CODE = 3;
     private GoogleMap mMap;
     public int userid;
     public String user;
     private Uri uri= null;
     private boolean seTomofoto = false;
-    private Button Savemycomment;
+    private Button Savemycomment, search_button;
     private Button gallery;
     Bitmap bitmap;
     private ImageView fotoTomada;
     private SharedPreferences preferences;
     Dialog dialogObs;
-    private EditText write;
+    private EditText write, search_text;
     private TextView versionText;
     private FusedLocationProviderClient mFusedLocationProviderClient;
     private String textoObservacion = "";
@@ -108,12 +124,81 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public Boolean mLocationPermissionsGranted = false;
     private ProgressDialog progress;
     private boolean cargando = false;
+    private LatLng currentLoc;
+    private AutocompleteSupportFragment autocompleteFragment;
 
     //En nuestro metodo onCreate referenciaremos nuestras variables asi como tambien ciertos metodos
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+
+        Intent intent = getIntent();
+        String action = intent.getAction();
+        String type = intent.getType();
+
+        String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
+
+        if(sharedText!=null) {
+            Log.d("prueba", "Acción = " + action + ", Tipo= " + type + "Datos= " + sharedText);
+            Log.d( "shared" ,"https:"+ sharedText.split("https:",2)[1]);
+            String link = ("https:"+ sharedText.split("https:",2)[1]).trim();
+            // https://stackoverflow.com/questions/51907305/get-latitude-longitude-from-url-google-maps
+            try{
+                StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+                StrictMode.setThreadPolicy(policy);
+                URL url = new URL(link);
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                Map<String, List<String>> map = urlConnection.getHeaderFields();
+                for (Map.Entry<String, List<String>> entry : map.entrySet()) {
+                    Log.d("link","Key : " + entry.getKey() +
+                            " ,Value : " + entry.getValue());
+                }
+                String server = urlConnection.getURL().toString();
+                Log.d("link",server );
+                //https://www.webconfs.com/http-header-check.php
+                //https://www.mkyong.com/java/how-to-get-http-response-header-in-java/
+                //urlConnection.disconnect();
+
+            } catch (Exception e){
+                    Log.d("error", "dddd");
+                    e.printStackTrace();
+            }
+
+
+            //get all headers
+
+           /* Geocoder geoCoder = new Geocoder(this, Locale.getDefault());
+            try {
+                List<Address> address = geoCoder.getFromLocationName(sharedText, 1);
+                if (address.size() > 0)
+                {
+                    Double lat = (double) (address.get(0).getLatitude());
+                    Double lon = (double) (address.get(0).getLongitude());
+
+                    Log.d("lat-long", "" + lat + "......." + lon);
+                    final LatLng user = new LatLng(lat, lon);
+                    *//*used marker for show the location *//*
+                    mMap.addMarker(new MarkerOptions()
+                            .position(user)
+                            .title("usuario")
+                    );
+                    // Move the camera instantly to hamburg with a zoom of 15.
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(user, 15));
+
+                    // Zoom in, animating the camera.
+                    mMap.animateCamera(CameraUpdateFactory.zoomTo(10), 2000, null);
+                }
+            } catch (IOException e){
+                    Log.d("caca", "eRROR");
+            }*/
+
+        }
+
+        if (!Places.isInitialized()) {
+            Places.initialize(getApplicationContext(), "AIzaSyCZDqx1QnKr3Jf0MRngtzst0ovYFgmJG9s");
+        }
+
 
         dialogObs = new Dialog(MapsActivity.this); //inicializamos nuestra ventana de dialogo que aparecera cuando agregamos un marcador.
         dialogObs.setContentView(R.layout.dialog_template);
@@ -151,6 +236,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 uri = null;
             }
         });
+
+    }
+
+    public void Buscar(){
+        List<Place.Field> fields = Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.ADDRESS, Place.Field.LAT_LNG);
+        // Start the autocomplete intent.
+        Intent intent = new Autocomplete.IntentBuilder(
+                AutocompleteActivityMode.FULLSCREEN, fields).setCountry("MX")
+                .build(this);
+        startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE);
     }
 
 
@@ -267,6 +362,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             case R.id.close_session:
                 cerrar();
                 return true;
+            case R.id.search:
+                Buscar();
             default:
                 return super.onContextItemSelected(item);
         }
@@ -348,6 +445,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+        }
+
+
+        if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                Place place = Autocomplete.getPlaceFromIntent(data);
+                geoLocate(place.getLatLng(),place.getName());
+
+            } else if (resultCode == AutocompleteActivity.RESULT_ERROR) {
+                // TODO: Handle the error.
+                Status status = Autocomplete.getStatusFromIntent(data);
+                Toast.makeText(MapsActivity.this, "Error: " + status.getStatusMessage(), Toast.LENGTH_LONG).show();
+                Log.i("tag", status.getStatusMessage());
+            } else if (resultCode == RESULT_CANCELED) {
+                // The user canceled the operation.
             }
         }
 
@@ -495,6 +608,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         if(task.isSuccessful() && task.getResult() != null){ //si el task encuentra nuestra ubicacion manda a la vista a nuestra localizacion actual
                             //Log.d("maps","onComplete: found location!");
                             Location currentLocation = (Location) task.getResult(); //concatenamos nuestra variable locacion con el resultado obtenido del task
+                            currentLoc = new LatLng(currentLocation.getLatitude(),currentLocation.getLongitude());
                             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(currentLocation.getLatitude(),currentLocation.getLongitude()), DEFAULT_ZOOM)); //mueve la vista hacia nuestra localizacion actual
                         }else {
                             Log.d("maps","onComplete: current location is null!"); // de lo contrario mostramos un mensaje en consola diciendo que la localizacion es nula
@@ -515,7 +629,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             //Log.e("maps","getDeviceLocation: SecurityException: " + e.getMessage());
         }
     }
-
     //Metodo que mueve la camara de la aplicacion hacia nuestra ubicacion actual
     private void moveCamera(LatLng latLng, float zoom){
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng,zoom));
@@ -531,7 +644,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() { //como el metodo post declaramos ua variable requestQueue, una variable para la URL y le indicamos a nuestro metodo que sera una peticion GET
             @Override
             public void onResponse(String response) {
-                //Log.d("MapsResponse", response);
+                Log.d("MapsResponse", response);
                 crearMarcadores(response); //en nuestro metodo onResponse le pasamos el string response a nuestro metodo crearMarcadores
                 if (cargando == true){
                     progress.dismiss();
@@ -584,7 +697,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             .icon(BitmapDescriptorFactory.fromResource(R.drawable.marcador_pcv))
                             .anchor(1.0f, 1.0f)
                             .title(addresses.get(0).getAddressLine(0))
-                            .position(latLng));
+                            .position(latLng));//setSnippet()
                 }
 
 
@@ -730,6 +843,18 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
 
+    // BÚSQUEDA
+
+    public void geoLocate(LatLng latlng, String name){
+        mMap.addMarker(new MarkerOptions().position(latlng).title(name));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latlng, 13f));
+
+    }
+
 
 
 }
+
+
+
+

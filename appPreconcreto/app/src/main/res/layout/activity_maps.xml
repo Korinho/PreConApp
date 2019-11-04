@@ -1,16 +1,38 @@
-<LinearLayout android:layout_height="match_parent"
+<LinearLayout xmlns:tools="http://schemas.android.com/tools"
+    android:layout_height="match_parent"
     android:layout_width="match_parent"
     android:orientation="vertical"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-
-    <LinearLayout
+    <!--<LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"/>
+        android:orientation="horizontal">
 
-    <fragment xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
+        <EditText
+            android:id="@+id/search_text"
+            android:layout_width="match_parent"
+            android:layout_height="47dp"
+            android:layout_weight="78"
+            android:background="@color/common_google_signin_btn_text_light_focused"
+            android:ems="10"
+            android:inputType="textPostalAddress"
+            android:textColor="#FFFFFF"
+            android:imeOptions="actionSearch"/>
+
+        <Button
+            android:id="@+id/search_button"
+            android:layout_width="56dp"
+            android:layout_height="match_parent"
+            android:background="@color/common_google_signin_btn_text_light_focused"
+            android:foreground="@android:drawable/ic_menu_search"
+            android:foregroundGravity="center"
+            />
+    </LinearLayout>-->
+
+
+
+    <fragment
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
