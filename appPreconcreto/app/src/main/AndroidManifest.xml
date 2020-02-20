@@ -5,6 +5,8 @@
          The ACCESS_COARSE/FINE_LOCATION permissions are not required to use
          Google Maps Android API v2, but you must specify either coarse or fine
          location permissions for the 'MyLocation' functionality.
+
+         release sha1 6C:2C:2B:BF:2A:C3:54:68:E1:77:1C:53:E2:74:70:BE:00:5C:D0:57
     -->
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />

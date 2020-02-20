@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">PreCon</string>
     <string name="title_activity_maps">Map</string>
+    <string name="google_maps_key">AIzaSyCZDqx1QnKr3Jf0MRngtzst0ovYFgmJG9s</string>
 </resources>

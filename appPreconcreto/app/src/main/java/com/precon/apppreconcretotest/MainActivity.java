@@ -121,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
     // en este metodo guardaremos nuestro ID de usuario en un SharedPreferences para trasladar su valor a la siguiente actividad
+
     private void guardarID(String response){
         try {
 

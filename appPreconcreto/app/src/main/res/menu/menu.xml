@@ -3,6 +3,11 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/refresh"
+        android:icon="@drawable/refresh_32"
+        android:title="refresh"
+        app:showAsAction="always|collapseActionView" />
+    <item
         android:id="@+id/hibrido"
         android:title="Mapa Híbrido" />
     <item

@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -14,10 +15,13 @@ import android.graphics.Bitmap;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.Environment;
+import android.os.Handler;
 import android.os.StrictMode;
 import android.provider.MediaStore;
 
@@ -44,7 +48,6 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.HttpResponse;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import android.view.Menu;
@@ -73,15 +76,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
@@ -91,6 +91,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import static com.precon.apppreconcretotest.MainActivity.SHARED_PREFS;
 
@@ -112,6 +114,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     Bitmap bitmap;
     private ImageView fotoTomada;
     private SharedPreferences preferences;
+    public static final String SHARED_PREFS = "sharedPrefs";
     Dialog dialogObs;
     private EditText write, search_text;
     private TextView versionText;
@@ -126,6 +129,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private boolean cargando = false;
     private LatLng currentLoc;
     private AutocompleteSupportFragment autocompleteFragment;
+    private LocationManager locationManager;
+    private boolean isGPSEnabled, isNetworkEnabled;
+    private Timer myTimer;
+    private String respuesta;
+    private int total;
+
 
     //En nuestro metodo onCreate referenciaremos nuestras variables asi como tambien ciertos metodos
     @Override
@@ -165,38 +174,24 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     e.printStackTrace();
             }
 
-
-            //get all headers
-
-           /* Geocoder geoCoder = new Geocoder(this, Locale.getDefault());
-            try {
-                List<Address> address = geoCoder.getFromLocationName(sharedText, 1);
-                if (address.size() > 0)
-                {
-                    Double lat = (double) (address.get(0).getLatitude());
-                    Double lon = (double) (address.get(0).getLongitude());
-
-                    Log.d("lat-long", "" + lat + "......." + lon);
-                    final LatLng user = new LatLng(lat, lon);
-                    *//*used marker for show the location *//*
-                    mMap.addMarker(new MarkerOptions()
-                            .position(user)
-                            .title("usuario")
-                    );
-                    // Move the camera instantly to hamburg with a zoom of 15.
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(user, 15));
-
-                    // Zoom in, animating the camera.
-                    mMap.animateCamera(CameraUpdateFactory.zoomTo(10), 2000, null);
-                }
-            } catch (IOException e){
-                    Log.d("caca", "eRROR");
-            }*/
-
         }
 
+        locationManager = (LocationManager) MapsActivity.this.getSystemService(Context.LOCATION_SERVICE);
+
+        // getting GPS status
+        isGPSEnabled = locationManager
+                .isProviderEnabled(LocationManager.GPS_PROVIDER);
+
+        Log.v("isGPSEnabled", "=" + isGPSEnabled);
+
+        // getting network status
+        isNetworkEnabled = locationManager
+                .isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+
+        Log.v("isNetworkEnabled", "=" + isNetworkEnabled);
+
         if (!Places.isInitialized()) {
-            Places.initialize(getApplicationContext(), "AIzaSyCZDqx1QnKr3Jf0MRngtzst0ovYFgmJG9s");
+            Places.initialize(getApplicationContext(), getString(R.string.google_maps_key));
         }
 
 
@@ -218,13 +213,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         userid = preferences.getInt("id_usuario",0); //Obtenemos su valor tal cual se llama su parametro en la actividad anterior
+        respuesta = preferences.getString("respuesta", "");
         String nombre = preferences.getString("nombre",""); //Obtenemos el nombre del usuario
         getLocationPermission(); //inicializamos nuestro metodo para obtener permisos de localizacion en nuestro mapa
         initMap(); //metodo para iniciar nuestro mapa con todos sus componentes
         setTitle(nombre); // Se establece el nombre de usuario en la barra superior de la App
 
         progress = new ProgressDialog(this); // barra de progreso
-        progress.setTitle("Subiendo ubicación");
+        progress.setTitle("Cargando ubicaciones");
         progress.setMessage("Un momento...");
         progress.setCancelable(false); // previene sea ocultado vía clic
 
@@ -322,13 +318,18 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
             }
         });
-        volleyProcess(); //mandamos a llamar nuestro metodo de actualizar marcadores
-        /*String contra = "1234" ;
-        try{
-        Toast.makeText(getApplicationContext(),SHA1(contra),Toast.LENGTH_LONG).show();
-        Log.d("Hash",SHA1(contra));
-        } catch (Exception e){}*/
 
+        progress.show();
+        myTimer = new Timer();
+        myTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                Log.i("ppp", "iniciando volley");
+                volleyProcess();
+            }
+
+        }, 1000);
+        ; //mandamos a llamar nuestro metodo de actualizar marcadores
 
     }
 
@@ -364,6 +365,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 return true;
             case R.id.search:
                 Buscar();
+            case R.id.refresh:
+                progress.show();
+                volleyProcess();
             default:
                 return super.onContextItemSelected(item);
         }
@@ -611,16 +615,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             currentLoc = new LatLng(currentLocation.getLatitude(),currentLocation.getLongitude());
                             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(currentLocation.getLatitude(),currentLocation.getLongitude()), DEFAULT_ZOOM)); //mueve la vista hacia nuestra localizacion actual
                         }else {
+                            if(isGPSEnabled!=true){
+                                AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this);
+                                builder.setCancelable(false);
+                                builder.setMessage("Activa la ubicación/gps y vuelve a iniciar la aplicación");
+                                builder.setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int id) {
+                                        ActivityCompat.finishAffinity(MapsActivity.this);
+                                    }
+                                });
+                                builder.show();
+                            }
                             Log.d("maps","onComplete: current location is null!"); // de lo contrario mostramos un mensaje en consola diciendo que la localizacion es nula
-                            AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this);
-                            builder.setCancelable(false);
-                            builder.setMessage("Activa la ubicación/gps y vuelve a iniciar la aplicación");
-                            builder.setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int id) {
-                                    ActivityCompat.finishAffinity(MapsActivity.this);
-                                }
-                            });
-                            builder.show();
+
                         }
                     }
                 });
@@ -644,18 +651,23 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() { //como el metodo post declaramos ua variable requestQueue, una variable para la URL y le indicamos a nuestro metodo que sera una peticion GET
             @Override
             public void onResponse(String response) {
+                Log.d("MapsResponse", "Obteniendo response");
                 Log.d("MapsResponse", response);
-                crearMarcadores(response); //en nuestro metodo onResponse le pasamos el string response a nuestro metodo crearMarcadores
-                if (cargando == true){
-                    progress.dismiss();
-                    cargando = false;
-                }
-                refreshAllContent(10000); //tambien mandamos a llamar al metodo refreshAllContent y se le da el valor de 10000 osea 10 segundos
+                respuesta = response;
+
+                //runOnUiThread(crearMarcadores);
+                new Handler().postDelayed( crearMarcadores, 0);
+                //crearMarcadores(response); //en nuestro metodo onResponse le pasamos el string response a nuestro metodo crearMarcadores
+
+                //refreshAllContent(10000); //tambien mandamos a llamar al metodo refreshAllContent y se le da el valor de 10000 osea 10 segundos
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
                 //Log.d("MapsError", error.toString());
+                if(respuesta.length()>0){
+                    new Handler().postDelayed( crearMarcadores, 0);
+                }
             }
         }) {
             @Override
@@ -672,43 +684,70 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         requestQueue.add(request);
     }
     //En este metodo se crearan los marcadores que ya estan almacenados en la API
-    private void crearMarcadores(String response) {
-        try {
-            //creamos un objeto json y un jsonArray en el cual buscara las "ubicaciones"
-            JSONObject object = new JSONObject(response);
-            JSONArray ubicaciones = object.getJSONArray("ubicaciones");
-            //con un for recorremos el arreglo ubicaciones
-            for(int i = 0; i < ubicaciones.length();i++){
-                JSONObject ubicacion  	= ubicaciones.getJSONObject(i);
-                //obtenemos en variables String la latitud y longitud y las pasamos a variables doubles
-                String latitud  = ubicacion.getString("latitud");
-                String longitud 	= ubicacion.getString("longitud");
+    private Runnable crearMarcadores = new Runnable() {
+       public void run() {
+           try {
+               //creamos un objeto json y un jsonArray en el cual buscara las "ubicaciones"
+               cargando = true;
+               JSONObject object = new JSONObject(respuesta);
+               JSONArray ubicaciones = object.getJSONArray("ubicaciones");
 
-                double lat = Double.valueOf(latitud);
-                double lon = Double.valueOf(longitud);
-                //ahora crea marcador
-                Geocoder geocoder = new Geocoder(MapsActivity.this, Locale.getDefault());
-                LatLng latLng = new LatLng(lat,lon);
-                List<Address> addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
+               if(object.getInt("total") == total){ /// Se verifica que la cantidad de ubicaciones sea diferente a la inicial para actualizar
+                   Log.i("ubi", "No hubo cambios");
+               } else {
+                   total = object.getInt("total");
+                   SharedPreferences.Editor editor= preferences.edit(); //metemos nuestra variable en el SharedPreferences para que quede almacenada
+                   editor.putString("respuesta",respuesta);
+                   JSONObject ubicacion;
+                   String latitud;
+                   String longitud;
+                   double lat;
+                   double lon;
+                   LatLng latLng;
+                   Geocoder geocoder;
+                   List<Address> addresses;
+                   //con un for recorremos el arreglo ubicaciones
+                   for (int i = 0; i < ubicaciones.length(); i++) {
+                       //Log.i("ubi", "ubi "+ i);
+                       ubicacion = ubicaciones.getJSONObject(i);
+                       //obtenemos en variables String la latitud y longitud y las pasamos a variables doubles
+                       latitud = ubicacion.getString("latitud");
+                       longitud = ubicacion.getString("longitud");
 
-                //validamos si el mapa viene vacio, si lo esta nos crea los marcadores ya guardados
-                if(addresses.size() > 0){
-                    mMap.addMarker(new MarkerOptions()
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.marcador_pcv))
-                            .anchor(1.0f, 1.0f)
-                            .title(addresses.get(0).getAddressLine(0))
-                            .position(latLng));//setSnippet()
-                }
+                       lat = Double.valueOf(latitud);
+                       lon = Double.valueOf(longitud);
+                       //ahora crea marcador
+                       geocoder = new Geocoder(MapsActivity.this, Locale.getDefault());
+                       latLng = new LatLng(lat, lon);
+                       addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
+
+                       //validamos si el mapa viene vacio, si lo esta nos crea los marcadores ya guardados
+                       if (addresses.size() > 0) {
+                           mMap.addMarker(new MarkerOptions()
+                                   .icon(BitmapDescriptorFactory.fromResource(R.drawable.marcador_pcv))
+                                   .anchor(1.0f, 1.0f)
+                                   .title(addresses.get(0).getAddressLine(0))
+                                   .position(latLng));//setSnippet()
+                       }
+
+                   }
+
+               }
 
 
-            }
 
-        } catch (JSONException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+           } catch (JSONException e) {
+               e.printStackTrace();
+           } catch (IOException e) {
+               e.printStackTrace();
+           }
+
+           if (cargando == true){
+               progress.dismiss();
+               cargando = false;
+           }
+       }
+    };
     //metodo que determina el tiempo en que se actualizan los marcadores guardados en la API REST
     public  void refreshAllContent(final long timetoupdate) {
         new CountDownTimer(timetoupdate, 10000) {
@@ -716,7 +755,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
             public void onFinish() {
                 // Log.i("SCROLLS ", "UPDATE CONTENT HERE ");
-                volleyProcess();
+
+                //volleyProcess();
             }
         }.start();
     }
